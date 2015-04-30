@@ -6,7 +6,7 @@ license = "MIT/Apache-2.0"
 repository = "https://github.com/bluss/scopeguard"
 authors = ["bluss"]
 
-description = "A convenient RAII scope guard."
+description = "A RAII scope guard."
 
 keywords = ["scope-guard", "defer"]
 
