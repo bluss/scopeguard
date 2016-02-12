@@ -19,24 +19,24 @@ __ http://bluss.github.io/scopeguard
 How to use
 ----------
 
-```rust
-extern crate scopeguard;
+::
 
-use scopeguard::guard;
+    extern crate scopeguard;
 
-fn f() {
-    let _defer = guard((), |_| {
-        println!("Called at return or panic");
-    });
-    panic!();
-}
+    use scopeguard::guard;
 
-fn g() {
-    let f = File::create("newfile.txt").unwrap();
-    let mut file = guard(f, |f| {
-        // write file at return or panic
-        f.sync_all();
-    });
-    file.write("testme\n");
-}
-```
+    fn f() {
+        let _defer = guard((), |_| {
+            println!("Called at return or panic");
+        });
+        panic!();
+    }
+
+    fn g() {
+        let f = File::create("newfile.txt").unwrap();
+        let mut file = guard(f, |f| {
+            // write file at return or panic
+            f.sync_all();
+        });
+        file.write("testme\n");
+    }
