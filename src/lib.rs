@@ -1,5 +1,10 @@
 use std::ops::{Deref, DerefMut};
 
+/// Macro to create a `Guard` (without any owned value).
+///
+/// The macro takes one expression `$e`, which is the body of a closure
+/// that will run when the scope is exited. The expression can
+/// be a whole block.
 #[macro_export]
 macro_rules! defer {
     ($e:expr) => {
@@ -11,10 +16,12 @@ macro_rules! defer {
 ///
 /// If you place a guard value in a local variable, its destructor will
 /// run regardless how you leave the function — regular return or panic
-/// (barring truly abnormal incidents).
+/// (barring abnormal incidents like aborts; so as long as destructors run).
 ///
 /// The guard's closure will be called with a mut ref to the held value
 /// in the destructor. It's called only once.
+///
+/// The `Guard` implements `Deref` so that you can access the inner value.
 pub struct Guard<T, F>
     where F: FnMut(&mut T)
 {
