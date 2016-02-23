@@ -21,14 +21,12 @@ How to use
 
 ::
 
-    extern crate scopeguard;
+    #[macro_use(defer)] extern crate scopeguard;
 
     use scopeguard::guard;
 
     fn f() {
-        let _defer = guard((), |_| {
-            println!("Called at return or panic");
-        });
+        defer!(println!("Called at return or panic"));
         panic!();
     }
 
@@ -40,3 +38,10 @@ How to use
         });
         file.write("testme\n");
     }
+
+Recent Changes
+--------------
+
+- 0.1.2
+
+  - Add macro ``defer!()``
