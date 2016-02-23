@@ -1,5 +1,12 @@
 use std::ops::{Deref, DerefMut};
 
+#[macro_export]
+macro_rules! defer {
+    ($e:expr) => {
+        let _guard = $crate::guard((), |_| $e);
+    }
+}
+
 /// `Guard` is a scope guard that may own a protected value.
 ///
 /// If you place a guard value in a local variable, its destructor will
@@ -48,5 +55,14 @@ impl<T, F> Drop for Guard<T, F>
     fn drop(&mut self) {
         (self.__dropfn)(&mut self.__value)
     }
+}
+
+#[test]
+fn test_defer() {
+    use std::cell::Cell;
+
+    let drops = Cell::new(0);
+    defer!(drops.set(1000));
+    assert_eq!(drops.get(), 0);
 }
 
