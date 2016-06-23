@@ -42,6 +42,12 @@ How to use
 Recent Changes
 --------------
 
+- 0.2.0
+
+  - Require Rust 1.6
+  - Use `no_std` unconditionally
+  - No other changes
+
 - 0.1.2
 
   - Add macro ``defer!()``
