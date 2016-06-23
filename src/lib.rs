@@ -1,3 +1,8 @@
+#![cfg_attr(not(test), no_std)]
+
+#[cfg(not(test))]
+extern crate core as std;
+
 use std::ops::{Deref, DerefMut};
 
 /// Macro to create a `Guard` (without any owned value).
