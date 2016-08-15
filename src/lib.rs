@@ -19,14 +19,14 @@ macro_rules! defer {
 
 /// `Guard` is a scope guard that may own a protected value.
 ///
-/// If you place a guard value in a local variable, its destructor will
+/// If you place a guard in a local variable, the closure will
 /// run regardless how you leave the function — regular return or panic
 /// (barring abnormal incidents like aborts; so as long as destructors run).
+/// It is run only once.
 ///
-/// The guard's closure will be called with a mut ref to the held value
-/// in the destructor. It's called only once.
-///
-/// The `Guard` implements `Deref` so that you can access the inner value.
+/// The guard's closure will be called with a mut ref to the held value;
+/// While the closure could just capture it, by placing the value in the guard
+/// the rest of the function can access it too through the `Deref` and `DerefMut` impl.
 pub struct Guard<T, F>
     where F: FnMut(&mut T)
 {
@@ -77,4 +77,3 @@ fn test_defer() {
     defer!(drops.set(1000));
     assert_eq!(drops.get(), 0);
 }
-
