@@ -1,3 +1,6 @@
+//! A scope guard will run a given closure when it goes out of scope,
+//! even if the code between panics.
+
 #![cfg_attr(not(test), no_std)]
 
 #[cfg(not(test))]

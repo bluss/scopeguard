@@ -7,7 +7,9 @@ repository = "https://github.com/bluss/scopeguard"
 documentation = "https://bluss.github.io/scopeguard/"
 authors = ["bluss"]
 
-description = "A RAII scope guard."
+description = """
+A RAII scope guard that will run a given closure when it goes out of scope,
+even if the code between panics.
+"""
 
-keywords = ["scope-guard", "defer"]
-
+keywords = ["scope-guard", "defer", "panic"]
