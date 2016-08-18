@@ -69,6 +69,12 @@ impl<T, F> Drop for Guard<T, F>
     }
 }
 
+// F might be a Fn and therefore maybe not implement Sync,
+// but a &FnMut is useless, and F is inaccessible anyway.
+unsafe impl<T, F> Sync for Guard<T, F>
+    where T: Sync, F: Send+FnMut(&mut T)
+{}
+
 #[test]
 fn test_defer() {
     use std::cell::Cell;
