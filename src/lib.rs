@@ -28,51 +28,49 @@ macro_rules! defer {
 ///
 /// The `Guard` implements `Deref` so that you can access the inner value.
 pub struct Guard<T, F>
-    where F: FnMut(&mut T)
+    where F: FnOnce(T)
 {
-    __dropfn: F,
-    __value: T,
+    __at_drop: Option<(T, F)>
 }
 
 /// Create a new `Guard` owning `v` and with deferred closure `dropfn`.
 pub fn guard<T, F>(v: T, dropfn: F) -> Guard<T, F>
-    where F: FnMut(&mut T)
+    where F: FnOnce(T)
 {
-    Guard{__value: v, __dropfn: dropfn}
+    Guard{__at_drop: Some((v, dropfn))}
 }
 
 impl<T, F> Deref for Guard<T, F>
-    where F: FnMut(&mut T)
+    where F: FnOnce(T)
 {
     type Target = T;
-    fn deref(&self) -> &T
-    {
-        &self.__value
+    fn deref(&self) -> &T {
+        &self.__at_drop.as_ref().unwrap().0
     }
-
 }
 
 impl<T, F> DerefMut for Guard<T, F>
-    where F: FnMut(&mut T)
+    where F: FnOnce(T)
 {
-    fn deref_mut(&mut self) -> &mut T
-    {
-        &mut self.__value
+    fn deref_mut(&mut self) -> &mut T {
+        &mut self.__at_drop.as_mut().unwrap().0
     }
 }
 
 impl<T, F> Drop for Guard<T, F>
-    where F: FnMut(&mut T)
+    where F: FnOnce(T)
 {
     fn drop(&mut self) {
-        (self.__dropfn)(&mut self.__value)
+        if let Some((value, dropfn)) = self.__at_drop.take() {
+            dropfn(value);
+        }
     }
 }
 
 // F might be a Fn and therefore maybe not implement Sync,
-// but a &FnMut is useless, and F is inaccessible anyway.
+// but a &FnOnce is useless, and F is inaccessible anyway.
 unsafe impl<T, F> Sync for Guard<T, F>
-    where T: Sync, F: Send+FnMut(&mut T)
+    where T: Sync, F: Send+FnOnce(T)
 {}
 
 #[test]
