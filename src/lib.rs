@@ -1,5 +1,6 @@
 //! A scope guard will run a given closure when it goes out of scope,
 //! even if the code between panics.
+//! (as long as panic doesn't abort)
 
 #![cfg_attr(not(test), no_std)]
 
@@ -23,8 +24,8 @@ macro_rules! defer {
 /// `Guard` is a scope guard that may own a protected value.
 ///
 /// If you place a guard in a local variable, the closure will
-/// run regardless how you leave the function — regular return or panic
-/// (barring abnormal incidents like aborts; so as long as destructors run).
+/// run regardless how you leave the scope — through regular return or panic
+/// (except if panic or other code aborts; so as long as destructors run).
 /// It is run only once.
 ///
 /// The guard's closure will be called with a mut ref to the held value;

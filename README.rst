@@ -3,7 +3,7 @@ scopeguard
 ==========
 
 Rust crate for a convenient RAII scope guard that will run a given closure when
-it goes out of scope, even if the code between panics.
+it goes out of scope, even if the code between panics (assuming unwinding panic).
 
 
 Please read the `API documentation here`__
