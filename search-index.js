@@ -1,0 +1,3 @@
+var searchIndex = {};
+searchIndex["scopeguard"] = {"doc":"A scope guard will run a given closure when it goes out of scope,\neven if the code between panics.\n(as long as panic doesn&#39;t abort)","items":[[3,"Guard","scopeguard","`Guard` is a scope guard that may own a protected value.",null,null],[5,"guard","","Create a new `Guard` owning `v` and with deferred closure `dropfn`.",null,{"inputs":[{"name":"t"},{"name":"f"}],"output":{"name":"guard"}}],[11,"deref","","",0,null],[11,"deref_mut","","",0,null],[11,"drop","","",0,null],[14,"defer","","Macro to create a `Guard` (without any owned value).",null,null]],"paths":[[3,"Guard"]]};
+initSearch(searchIndex);
