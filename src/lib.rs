@@ -8,6 +8,7 @@
 extern crate core as std;
 
 use std::ops::{Deref, DerefMut};
+use std::mem::forget;
 
 /// Macro to create a `Guard` (without any owned value).
 ///
@@ -45,6 +46,16 @@ pub fn guard<T, F>(v: T, dropfn: F) -> Guard<T, F>
     Guard{__value: v, __dropfn: dropfn}
 }
 
+/// Execute `cleanup` only if `might_panic` panics and unwind.
+pub fn handle_panic_of<R, F, D>(might_panic: F,  mut cleanup: D) -> R
+    where F: FnOnce()->R, D: FnMut()
+{
+    let guard = guard((), |_| cleanup() );
+    let r = might_panic();
+    forget(guard);
+    r
+}
+
 impl<T, F> Deref for Guard<T, F>
     where F: FnMut(&mut T)
 {
@@ -73,11 +84,25 @@ impl<T, F> Drop for Guard<T, F>
     }
 }
 
-#[test]
-fn test_defer() {
+#[cfg(test)]
+mod tests {
+    use super::*;
     use std::cell::Cell;
 
-    let drops = Cell::new(0);
-    defer!(drops.set(1000));
-    assert_eq!(drops.get(), 0);
+    #[test]
+    fn test_defer() {
+        let drops = Cell::new(0);
+        defer!(drops.set(1000));
+        assert_eq!(drops.get(), 0);
+    }
+
+    #[test]
+    #[should_panic(expected="might_panic paniced")]
+    fn test_handle_panic() {
+        handle_panic_of(|| (), || panic!("cleanup executed when it should'nt") );
+
+        let panicing = Cell::new(false);
+        defer!(assert!(panicing.get()));
+        handle_panic_of(|| panic!("might_panic paniced"), || panicing.set(true) );
+    }
 }
