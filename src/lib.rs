@@ -103,10 +103,16 @@ macro_rules! defer_on_unwind {
 
 /// `ScopeGuard` is a scope guard that may own a protected value.
 ///
-/// If you place a guard in a local variable, the closure will
+/// If you place a guard in a local variable, the closure can
 /// run regardless how you leave the scope — through regular return or panic
 /// (except if panic or other code aborts; so as long as destructors run).
 /// It is run only once.
+///
+/// The `S` parameter for [`Strategy`](Strategy.t.html) determines if
+/// the closure actually runs.
+///
+/// The guard's closure will be called with a mut ref to the held value
+/// in the destructor. It's called only once.
 ///
 /// The `ScopeGuard` implements `Deref` so that you can access the inner value.
 pub struct ScopeGuard<T, F, S: Strategy = Always>
