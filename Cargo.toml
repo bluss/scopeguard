@@ -13,3 +13,7 @@ even if the code between panics (assuming unwinding panic).
 """
 
 keywords = ["scope-guard", "defer", "panic"]
+
+[features]
+default = ["use_std"]
+use_std = []
