@@ -49,7 +49,7 @@ impl Strategy for OnSuccess {
     fn should_run() -> bool { !std::thread::panicking() }
 }
 
-/// Macro to create a `Guard` (without any owned value).
+/// Macro to create a `ScopeGuard` (without any owned value).
 ///
 /// The macro takes one expression `$e`, which is the body of a closure
 /// that will run when the scope is exited. The expression can
@@ -61,7 +61,7 @@ macro_rules! defer {
     }
 }
 
-/// Macro to create a `Guard` (without any owned value).
+/// Macro to create a `ScopeGuard` (without any owned value).
 ///
 /// The macro takes one expression `$e`, which is the body of a closure
 /// that will run when the scope is exited. The expression can
@@ -73,7 +73,7 @@ macro_rules! defer_on_success {
     }
 }
 
-/// Macro to create a `Guard` (without any owned value).
+/// Macro to create a `ScopeGuard` (without any owned value).
 ///
 /// The macro takes one expression `$e`, which is the body of a closure
 /// that will run when the scope is exited. The expression can
@@ -85,15 +85,15 @@ macro_rules! defer_on_unwind {
     }
 }
 
-/// `Guard` is a scope guard that may own a protected value.
+/// `ScopeGuard` is a scope guard that may own a protected value.
 ///
 /// If you place a guard in a local variable, the closure will
 /// run regardless how you leave the scope — through regular return or panic
 /// (except if panic or other code aborts; so as long as destructors run).
 /// It is run only once.
 ///
-/// The `Guard` implements `Deref` so that you can access the inner value.
-pub struct Guard<T, F, S: Strategy = Always>
+/// The `ScopeGuard` implements `Deref` so that you can access the inner value.
+pub struct ScopeGuard<T, F, S: Strategy = Always>
     where F: FnMut(&mut T)
 {
     __dropfn: F,
@@ -101,40 +101,40 @@ pub struct Guard<T, F, S: Strategy = Always>
     strategy: PhantomData<S>,
 }
 
-/// Create a new `Guard` owning `v` and with deferred closure `dropfn`.
-pub fn guard<T, F>(v: T, dropfn: F) -> Guard<T, F, Always>
+/// Create a new `ScopeGuard` owning `v` and with deferred closure `dropfn`.
+pub fn guard<T, F>(v: T, dropfn: F) -> ScopeGuard<T, F, Always>
     where F: FnMut(&mut T)
 {
     guard_strategy(v, dropfn)
 }
 
 #[cfg(feature = "use_std")]
-/// Create a new `Guard` owning `v` and with deferred closure `dropfn`.
-pub fn guard_on_success<T, F>(v: T, dropfn: F) -> Guard<T, F, OnSuccess>
+/// Create a new `ScopeGuard` owning `v` and with deferred closure `dropfn`.
+pub fn guard_on_success<T, F>(v: T, dropfn: F) -> ScopeGuard<T, F, OnSuccess>
     where F: FnMut(&mut T)
 {
     guard_strategy(v, dropfn)
 }
 
 #[cfg(feature = "use_std")]
-/// Create a new `Guard` owning `v` and with deferred closure `dropfn`.
-pub fn guard_on_unwind<T, F>(v: T, dropfn: F) -> Guard<T, F, OnUnwind>
+/// Create a new `ScopeGuard` owning `v` and with deferred closure `dropfn`.
+pub fn guard_on_unwind<T, F>(v: T, dropfn: F) -> ScopeGuard<T, F, OnUnwind>
     where F: FnMut(&mut T)
 {
     guard_strategy(v, dropfn)
 }
 
-fn guard_strategy<T, F, S: Strategy>(v: T, dropfn: F) -> Guard<T, F, S>
+fn guard_strategy<T, F, S: Strategy>(v: T, dropfn: F) -> ScopeGuard<T, F, S>
     where F: FnMut(&mut T)
 {
-    Guard {
+    ScopeGuard {
         __value: v,
         __dropfn: dropfn,
         strategy: PhantomData,
     }
 }
 
-impl<T, F, S: Strategy> Deref for Guard<T, F, S>
+impl<T, F, S: Strategy> Deref for ScopeGuard<T, F, S>
     where F: FnMut(&mut T)
 {
     type Target = T;
@@ -144,7 +144,7 @@ impl<T, F, S: Strategy> Deref for Guard<T, F, S>
 
 }
 
-impl<T, F, S: Strategy> DerefMut for Guard<T, F, S>
+impl<T, F, S: Strategy> DerefMut for ScopeGuard<T, F, S>
     where F: FnMut(&mut T)
 {
     fn deref_mut(&mut self) -> &mut T {
@@ -152,7 +152,7 @@ impl<T, F, S: Strategy> DerefMut for Guard<T, F, S>
     }
 }
 
-impl<T, F, S: Strategy> Drop for Guard<T, F, S>
+impl<T, F, S: Strategy> Drop for ScopeGuard<T, F, S>
     where F: FnMut(&mut T)
 {
     fn drop(&mut self) {
@@ -162,13 +162,13 @@ impl<T, F, S: Strategy> Drop for Guard<T, F, S>
     }
 }
 
-impl<T, F, S> fmt::Debug for Guard<T, F, S>
+impl<T, F, S> fmt::Debug for ScopeGuard<T, F, S>
     where T: fmt::Debug,
           F: FnMut(&mut T),
           S: Strategy + fmt::Debug,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.debug_struct("Guard")
+        f.debug_struct("ScopeGuard")
          .field("value", &self.__value)
          .finish()
     }
