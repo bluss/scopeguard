@@ -7,8 +7,9 @@
 #[cfg(not(any(test, feature = "use_std")))]
 extern crate core as std;
 
-use std::ops::{Deref, DerefMut};
+use std::fmt;
 use std::marker::PhantomData;
+use std::ops::{Deref, DerefMut};
 
 pub trait Strategy {
     fn should_run() -> bool;
@@ -18,14 +19,17 @@ pub trait Strategy {
 ///
 /// Always run; with the exception of abort, process exit, and other
 /// catastrophic events.
+#[derive(Debug)]
 pub enum Always {}
 
 /// Run on scope exit through unwinding.
 #[cfg(feature = "use_std")]
+#[derive(Debug)]
 pub enum OnUnwind {}
 
 /// Run on regular scope exit, when not unwinding.
 #[cfg(feature = "use_std")]
+#[derive(Debug)]
 pub enum OnSuccess {}
 
 impl Strategy for Always {
@@ -155,6 +159,18 @@ impl<T, F, S: Strategy> Drop for Guard<T, F, S>
         if S::should_run() {
             (self.__dropfn)(&mut self.__value)
         }
+    }
+}
+
+impl<T, F, S> fmt::Debug for Guard<T, F, S>
+    where T: fmt::Debug,
+          F: FnMut(&mut T),
+          S: Strategy + fmt::Debug,
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("Guard")
+         .field("value", &self.__value)
+         .finish()
     }
 }
 
