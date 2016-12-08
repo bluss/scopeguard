@@ -4,6 +4,14 @@
 
 #![cfg_attr(not(any(test, feature = "use_std")), no_std)]
 
+//!
+//!
+//! Crate features:
+//!
+//! - `use_std`
+//!   + Enabled by default. Enables `OnUnwind`, `OnSuccess` strategies.
+//!   + Disable to use `no_std`.
+
 #[cfg(not(any(test, feature = "use_std")))]
 extern crate core as std;
 
@@ -23,11 +31,15 @@ pub trait Strategy {
 pub enum Always {}
 
 /// Run on scope exit through unwinding.
+///
+/// Requires crate feature `use_std`.
 #[cfg(feature = "use_std")]
 #[derive(Debug)]
 pub enum OnUnwind {}
 
 /// Run on regular scope exit, when not unwinding.
+///
+/// Requires crate feature `use_std`.
 #[cfg(feature = "use_std")]
 #[derive(Debug)]
 pub enum OnSuccess {}
@@ -49,7 +61,7 @@ impl Strategy for OnSuccess {
     fn should_run() -> bool { !std::thread::panicking() }
 }
 
-/// Macro to create a `ScopeGuard` (without any owned value).
+/// Macro to create a `ScopeGuard` (always run).
 ///
 /// The macro takes one expression `$e`, which is the body of a closure
 /// that will run when the scope is exited. The expression can
@@ -61,11 +73,13 @@ macro_rules! defer {
     }
 }
 
-/// Macro to create a `ScopeGuard` (without any owned value).
+/// Macro to create a `ScopeGuard` (run on successful scope exit).
 ///
 /// The macro takes one expression `$e`, which is the body of a closure
 /// that will run when the scope is exited. The expression can
 /// be a whole block.
+///
+/// Requires crate feature `use_std`.
 #[macro_export]
 macro_rules! defer_on_success {
     ($e:expr) => {
@@ -73,11 +87,13 @@ macro_rules! defer_on_success {
     }
 }
 
-/// Macro to create a `ScopeGuard` (without any owned value).
+/// Macro to create a `ScopeGuard` (run on unwinding from panic).
 ///
 /// The macro takes one expression `$e`, which is the body of a closure
 /// that will run when the scope is exited. The expression can
 /// be a whole block.
+///
+/// Requires crate feature `use_std`.
 #[macro_export]
 macro_rules! defer_on_unwind {
     ($e:expr) => {
@@ -110,6 +126,8 @@ pub fn guard<T, F>(v: T, dropfn: F) -> ScopeGuard<T, F, Always>
 
 #[cfg(feature = "use_std")]
 /// Create a new `ScopeGuard` owning `v` and with deferred closure `dropfn`.
+///
+/// Requires crate feature `use_std`.
 pub fn guard_on_success<T, F>(v: T, dropfn: F) -> ScopeGuard<T, F, OnSuccess>
     where F: FnMut(&mut T)
 {
@@ -118,6 +136,8 @@ pub fn guard_on_success<T, F>(v: T, dropfn: F) -> ScopeGuard<T, F, OnSuccess>
 
 #[cfg(feature = "use_std")]
 /// Create a new `ScopeGuard` owning `v` and with deferred closure `dropfn`.
+///
+/// Requires crate feature `use_std`.
 pub fn guard_on_unwind<T, F>(v: T, dropfn: F) -> ScopeGuard<T, F, OnUnwind>
     where F: FnMut(&mut T)
 {
