@@ -1,31 +1,19 @@
 language: rust
 sudo: false
 
-# run builds for all the trains (and more)
 rust:
-  - 1.6.0
+  - 1.11.0
   - stable
   - beta
   - nightly
 
-# load travis-cargo
-before_script:
-  - |
-      pip install 'travis-cargo<0.2' --user &&
-      export PATH=$HOME/.local/bin:$PATH
+branches:
+  only:
+    - master
 
 # the main build
 script:
   - |
-      travis-cargo build &&
-      travis-cargo test &&
-      travis-cargo bench &&
-      travis-cargo doc
-after_success:
-  # upload the documentation (GH_TOKEN from env)
-  - travis-cargo --only nightly doc-upload
-
-env:
-  global:
-    # override the default `--features unstable` used for the nightly branch (optional)
-    - TRAVIS_CARGO_NIGHTLY_FEATURE=""
+      cargo build --no-default-features &&
+      cargo build &&
+      cargo test
