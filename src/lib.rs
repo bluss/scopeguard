@@ -20,6 +20,8 @@ use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 
 pub trait Strategy {
+    /// Return `true` if the guard’s associated code should run
+    /// (in the context where this method is called).
     fn should_run() -> bool;
 }
 
@@ -125,12 +127,29 @@ pub struct ScopeGuard<T, F, S: Strategy = Always>
     __value: T,
     strategy: PhantomData<S>,
 }
+impl<T, F, S> ScopeGuard<T, F, S>
+    where F: FnMut(&mut T),
+          S: Strategy,
+{
+    /// Create a `ScopeGuard` that owns `v` (accessible through deref) and calls
+    /// `dropfn` when its destructor runs.
+    ///
+    /// The `Strategy` decides whether the scope guard's closure should run.
+    pub fn with_strategy(v: T, dropfn: F) -> ScopeGuard<T, F, S> {
+        ScopeGuard {
+            __value: v,
+            __dropfn: dropfn,
+            strategy: PhantomData,
+        }
+    }
+}
+
 
 /// Create a new `ScopeGuard` owning `v` and with deferred closure `dropfn`.
 pub fn guard<T, F>(v: T, dropfn: F) -> ScopeGuard<T, F, Always>
     where F: FnMut(&mut T)
 {
-    guard_strategy(v, dropfn)
+    ScopeGuard::with_strategy(v, dropfn)
 }
 
 #[cfg(feature = "use_std")]
@@ -141,7 +160,7 @@ pub fn guard<T, F>(v: T, dropfn: F) -> ScopeGuard<T, F, Always>
 fn guard_on_success<T, F>(v: T, dropfn: F) -> ScopeGuard<T, F, OnSuccess>
     where F: FnMut(&mut T)
 {
-    guard_strategy(v, dropfn)
+    ScopeGuard::with_strategy(v, dropfn)
 }
 
 #[cfg(feature = "use_std")]
@@ -151,17 +170,7 @@ fn guard_on_success<T, F>(v: T, dropfn: F) -> ScopeGuard<T, F, OnSuccess>
 pub fn guard_on_unwind<T, F>(v: T, dropfn: F) -> ScopeGuard<T, F, OnUnwind>
     where F: FnMut(&mut T)
 {
-    guard_strategy(v, dropfn)
-}
-
-fn guard_strategy<T, F, S: Strategy>(v: T, dropfn: F) -> ScopeGuard<T, F, S>
-    where F: FnMut(&mut T)
-{
-    ScopeGuard {
-        __value: v,
-        __dropfn: dropfn,
-        strategy: PhantomData,
-    }
+    ScopeGuard::with_strategy(v, dropfn)
 }
 
 impl<T, F, S: Strategy> Deref for ScopeGuard<T, F, S>
