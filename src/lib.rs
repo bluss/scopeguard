@@ -25,8 +25,9 @@ pub trait Strategy {
 
 /// Always run on scope exit.
 ///
-/// Always run; with the exception of abort, process exit, and other
-/// catastrophic events.
+/// “Always” run: on regular exit from a scope or on unwinding from a panic.
+/// Can not run on abort, process exit, and other catastrophic events where
+/// destructors don’t run.
 #[derive(Debug)]
 pub enum Always {}
 
