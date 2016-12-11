@@ -5,10 +5,15 @@ scopeguard
 Rust crate for a convenient RAII scope guard that will run a given closure when
 it goes out of scope, even if the code between panics (assuming unwinding panic).
 
+The `defer!` macro and `guard` are `no_std` compatible (require only core),
+but the on unwinding strategy requires linking to `std`.
+
+Requires Rust 1.11.
+
 
 Please read the `API documentation here`__
 
-__ http://bluss.github.io/scopeguard
+__ https://docs.rs/scopeguard/
 
 |build_status|_ |crates|_
 
@@ -32,17 +37,29 @@ How to use
         panic!();
     }
 
+    use std::fs::File;
+    use std::io::Write;
+
     fn g() {
         let f = File::create("newfile.txt").unwrap();
         let mut file = guard(f, |f| {
             // write file at return or panic
-            f.sync_all();
+            let _ = f.sync_all();
         });
-        file.write("testme\n");
+        // Access the file through the scope guard itself
+        file.write(b"test me\n").unwrap();
     }
 
 Recent Changes
 --------------
+
+- 0.3.0
+
+  - Add ``defer_on_unwind!``, ``Strategy`` trait
+  - Rename ``Guard`` → ``ScopeGuard``
+  - Add ``ScopeGuard::with_strategy``.
+  - ``ScopeGuard`` now implements ``Debug``.
+  - Require Rust 1.11
 
 - 0.2.0
 
