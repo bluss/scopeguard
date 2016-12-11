@@ -53,7 +53,7 @@ How to use
 Recent Changes
 --------------
 
-- 0.3.0
+- 0.3.1
 
   - Add ``defer_on_unwind!``, ``Strategy`` trait
   - Rename ``Guard`` → ``ScopeGuard``
