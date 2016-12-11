@@ -9,7 +9,7 @@
 //! Crate features:
 //!
 //! - `use_std`
-//!   + Enabled by default. Enables `OnUnwind`, `OnSuccess` strategies.
+//!   + Enabled by default. Enables the `OnUnwind` strategy.
 //!   + Disable to use `no_std`.
 
 #[cfg(not(any(test, feature = "use_std")))]
@@ -42,7 +42,8 @@ pub enum OnUnwind {}
 /// Requires crate feature `use_std`.
 #[cfg(feature = "use_std")]
 #[derive(Debug)]
-pub enum OnSuccess {}
+#[cfg(test)]
+enum OnSuccess {}
 
 impl Strategy for Always {
     #[inline(always)]
@@ -56,6 +57,7 @@ impl Strategy for OnUnwind {
 }
 
 #[cfg(feature = "use_std")]
+#[cfg(test)]
 impl Strategy for OnSuccess {
     #[inline(always)]
     fn should_run() -> bool { !std::thread::panicking() }
@@ -80,7 +82,7 @@ macro_rules! defer {
 /// be a whole block.
 ///
 /// Requires crate feature `use_std`.
-#[macro_export]
+#[cfg(test)]
 macro_rules! defer_on_success {
     ($e:expr) => {
         let _guard = $crate::guard_on_success((), |_| $e);
@@ -134,7 +136,8 @@ pub fn guard<T, F>(v: T, dropfn: F) -> ScopeGuard<T, F, Always>
 /// Create a new `ScopeGuard` owning `v` and with deferred closure `dropfn`.
 ///
 /// Requires crate feature `use_std`.
-pub fn guard_on_success<T, F>(v: T, dropfn: F) -> ScopeGuard<T, F, OnSuccess>
+#[cfg(test)]
+fn guard_on_success<T, F>(v: T, dropfn: F) -> ScopeGuard<T, F, OnSuccess>
     where F: FnMut(&mut T)
 {
     guard_strategy(v, dropfn)
