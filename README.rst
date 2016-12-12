@@ -26,7 +26,7 @@ __ https://docs.rs/scopeguard/
 How to use
 ----------
 
-::
+.. code:: rust
 
     #[macro_use(defer)] extern crate scopeguard;
 
