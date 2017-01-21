@@ -1,6 +1,6 @@
 [package]
 name = "scopeguard"
-version = "0.3.1"
+version = "0.3.2"
 
 license = "MIT/Apache-2.0"
 repository = "https://github.com/bluss/scopeguard"
@@ -16,6 +16,7 @@ if the scope is extited through unwinding on panic.
 """
 
 keywords = ["scope-guard", "defer", "panic"]
+categories = ["rust-patterns"]
 
 [features]
 default = ["use_std"]

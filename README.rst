@@ -53,6 +53,10 @@ How to use
 Recent Changes
 --------------
 
+- 0.3.2
+
+  - Add crate categories
+
 - 0.3.1
 
   - Add ``defer_on_unwind!``, ``Strategy`` trait
