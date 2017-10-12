@@ -135,6 +135,7 @@ impl<T, F, S> ScopeGuard<T, F, S>
     /// `dropfn` when its destructor runs.
     ///
     /// The `Strategy` decides whether the scope guard's closure should run.
+    #[inline]
     pub fn with_strategy(v: T, dropfn: F) -> ScopeGuard<T, F, S> {
         ScopeGuard {
             __value: v,
@@ -146,27 +147,30 @@ impl<T, F, S> ScopeGuard<T, F, S>
 
 
 /// Create a new `ScopeGuard` owning `v` and with deferred closure `dropfn`.
+#[inline]
 pub fn guard<T, F>(v: T, dropfn: F) -> ScopeGuard<T, F, Always>
     where F: FnMut(&mut T)
 {
     ScopeGuard::with_strategy(v, dropfn)
 }
 
-#[cfg(feature = "use_std")]
 /// Create a new `ScopeGuard` owning `v` and with deferred closure `dropfn`.
 ///
 /// Requires crate feature `use_std`.
+#[cfg(feature = "use_std")]
 #[cfg(test)]
+#[inline]
 fn guard_on_success<T, F>(v: T, dropfn: F) -> ScopeGuard<T, F, OnSuccess>
     where F: FnMut(&mut T)
 {
     ScopeGuard::with_strategy(v, dropfn)
 }
 
-#[cfg(feature = "use_std")]
 /// Create a new `ScopeGuard` owning `v` and with deferred closure `dropfn`.
 ///
 /// Requires crate feature `use_std`.
+#[cfg(feature = "use_std")]
+#[inline]
 pub fn guard_on_unwind<T, F>(v: T, dropfn: F) -> ScopeGuard<T, F, OnUnwind>
     where F: FnMut(&mut T)
 {
