@@ -1,6 +1,6 @@
 [package]
 name = "scopeguard"
-version = "0.3.2"
+version = "0.3.3"
 
 license = "MIT/Apache-2.0"
 repository = "https://github.com/bluss/scopeguard"
@@ -23,4 +23,4 @@ default = ["use_std"]
 use_std = []
 
 [package.metadata.release]
-#no-dev-version = true
+no-dev-version = true

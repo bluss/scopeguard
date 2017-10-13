@@ -53,6 +53,11 @@ How to use
 Recent Changes
 --------------
 
+- 0.3.3
+
+  - Use ``#[inline]`` on a few more functions by @stjepang (#14)
+  - Add examples to crate documentation
+
 - 0.3.2
 
   - Add crate categories
