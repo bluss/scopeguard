@@ -320,6 +320,11 @@ pub fn guard_on_unwind<T, F: FnOnce(T)>(v: T, dropfn: F)
     ScopeGuard::with_strategy(v, dropfn)
 }
 
+// ScopeGuard can be Sync even if F isn't because the closure is
+// not accessible from references.
+// The guard does not store any instance of S, so it is also irellevant.
+unsafe impl<T: Sync, F: FnOnce(T), S: Strategy> Sync for ScopeGuard<T, F, S> {}
+
 impl<T, F: FnOnce(T), S: Strategy> Deref for ScopeGuard<T, F, S> {
     type Target = T;
     fn deref(&self) -> &T {
