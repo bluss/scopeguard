@@ -155,7 +155,9 @@ extern crate core as std;
 
 use std::fmt;
 use std::marker::PhantomData;
+use std::mem::ManuallyDrop;
 use std::ops::{Deref, DerefMut};
+use std::ptr;
 
 pub trait Strategy {
     /// Return `true` if the guard’s associated code should run
@@ -212,7 +214,7 @@ impl Strategy for OnSuccess {
 #[macro_export]
 macro_rules! defer {
     ($e:expr) => {
-        let _guard = $crate::guard((), |_| $e);
+        let _guard = $crate::guard((), |()| $e);
     }
 }
 
@@ -226,7 +228,7 @@ macro_rules! defer {
 #[cfg(test)]
 macro_rules! defer_on_success {
     ($e:expr) => {
-        let _guard = $crate::guard_on_success((), |_| $e);
+        let _guard = $crate::guard_on_success((), |()| $e);
     }
 }
 
@@ -240,7 +242,7 @@ macro_rules! defer_on_success {
 #[macro_export]
 macro_rules! defer_on_unwind {
     ($e:expr) => {
-        let _guard = $crate::guard_on_unwind((), |_| $e);
+        let _guard = $crate::guard_on_unwind((), |()| $e);
     }
 }
 
@@ -254,21 +256,15 @@ macro_rules! defer_on_unwind {
 /// The `S` parameter for [`Strategy`](Strategy.t.html) determines if
 /// the closure actually runs.
 ///
-/// The guard's closure will be called with a mut ref to the held value
-/// in the destructor. It's called only once.
+/// The guard's closure will be called with the held value in the destructor.
 ///
 /// The `ScopeGuard` implements `Deref` so that you can access the inner value.
-pub struct ScopeGuard<T, F, S: Strategy = Always>
-    where F: FnMut(&mut T)
-{
-    __dropfn: F,
-    __value: T,
+pub struct ScopeGuard<T, F: FnOnce(T), S: Strategy = Always> {
+    value: ManuallyDrop<T>,
+    dropfn: ManuallyDrop<F>,
     strategy: PhantomData<S>,
 }
-impl<T, F, S> ScopeGuard<T, F, S>
-    where F: FnMut(&mut T),
-          S: Strategy,
-{
+impl<T, F: FnOnce(T), S: Strategy> ScopeGuard<T, F, S> {
     /// Create a `ScopeGuard` that owns `v` (accessible through deref) and calls
     /// `dropfn` when its destructor runs.
     ///
@@ -276,8 +272,8 @@ impl<T, F, S> ScopeGuard<T, F, S>
     #[inline]
     pub fn with_strategy(v: T, dropfn: F) -> ScopeGuard<T, F, S> {
         ScopeGuard {
-            __value: v,
-            __dropfn: dropfn,
+            value: ManuallyDrop::new(v),
+            dropfn: ManuallyDrop::new(dropfn),
             strategy: PhantomData,
         }
     }
@@ -286,9 +282,7 @@ impl<T, F, S> ScopeGuard<T, F, S>
 
 /// Create a new `ScopeGuard` owning `v` and with deferred closure `dropfn`.
 #[inline]
-pub fn guard<T, F>(v: T, dropfn: F) -> ScopeGuard<T, F, Always>
-    where F: FnMut(&mut T)
-{
+pub fn guard<T, F: FnOnce(T)>(v: T, dropfn: F) -> ScopeGuard<T, F, Always> {
     ScopeGuard::with_strategy(v, dropfn)
 }
 
@@ -298,9 +292,8 @@ pub fn guard<T, F>(v: T, dropfn: F) -> ScopeGuard<T, F, Always>
 #[cfg(feature = "use_std")]
 #[cfg(test)]
 #[inline]
-fn guard_on_success<T, F>(v: T, dropfn: F) -> ScopeGuard<T, F, OnSuccess>
-    where F: FnMut(&mut T)
-{
+fn guard_on_success<T, F: FnOnce(T)>(v: T, dropfn: F)
+-> ScopeGuard<T, F, OnSuccess> {
     ScopeGuard::with_strategy(v, dropfn)
 }
 
@@ -309,54 +302,49 @@ fn guard_on_success<T, F>(v: T, dropfn: F) -> ScopeGuard<T, F, OnSuccess>
 /// Requires crate feature `use_std`.
 #[cfg(feature = "use_std")]
 #[inline]
-pub fn guard_on_unwind<T, F>(v: T, dropfn: F) -> ScopeGuard<T, F, OnUnwind>
-    where F: FnMut(&mut T)
-{
+pub fn guard_on_unwind<T, F: FnOnce(T)>(v: T, dropfn: F)
+-> ScopeGuard<T, F, OnUnwind> {
     ScopeGuard::with_strategy(v, dropfn)
 }
 
-impl<T, F, S: Strategy> Deref for ScopeGuard<T, F, S>
-    where F: FnMut(&mut T)
-{
+impl<T, F: FnOnce(T), S: Strategy> Deref for ScopeGuard<T, F, S> {
     type Target = T;
     fn deref(&self) -> &T {
-        &self.__value
+        &*self.value
     }
-
 }
 
-impl<T, F, S: Strategy> DerefMut for ScopeGuard<T, F, S>
-    where F: FnMut(&mut T)
-{
+impl<T, F: FnOnce(T), S: Strategy> DerefMut for ScopeGuard<T, F, S> {
     fn deref_mut(&mut self) -> &mut T {
-        &mut self.__value
+        &mut*self.value
     }
 }
 
-impl<T, F, S: Strategy> Drop for ScopeGuard<T, F, S>
-    where F: FnMut(&mut T)
-{
+impl<T, F: FnOnce(T), S: Strategy> Drop for ScopeGuard<T, F, S> {
     fn drop(&mut self) {
+        // This is OK because the fields are `ManuallyDrop`s
+        // which will not be dropped by the compiler.
+        let (value,dropfn) = unsafe {
+            (ptr::read(&*self.value), ptr::read(&*self.dropfn))
+        };
         if S::should_run() {
-            (self.__dropfn)(&mut self.__value)
+            dropfn(value);
         }
     }
 }
 
-impl<T, F, S> fmt::Debug for ScopeGuard<T, F, S>
-    where T: fmt::Debug,
-          F: FnMut(&mut T),
-          S: Strategy + fmt::Debug,
-{
+impl<T: fmt::Debug, F: FnOnce(T), S: Strategy>
+fmt::Debug for ScopeGuard<T, F, S> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("ScopeGuard")
-         .field("value", &self.__value)
+         .field("value", &*self.value)
          .finish()
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use std::cell::Cell;
     use std::panic::catch_unwind;
     use std::panic::AssertUnwindSafe;
@@ -406,5 +394,39 @@ mod tests {
             defer_on_unwind!(drops.set(1));
         }
         assert_eq!(drops.get(), 0);
+    }
+
+    #[test]
+    fn test_only_dropped_by_closure_when_run() {
+        let value_drops = Cell::new(0);
+        let value = guard((), |()| value_drops.set(1+value_drops.get()));
+        let closure_drops = Cell::new(0);
+        let guard = guard(value, |_| closure_drops.set(1+closure_drops.get()));
+        assert_eq!(value_drops.get(), 0);
+        assert_eq!(closure_drops.get(), 0);
+        drop(guard);
+        assert_eq!(value_drops.get(), 1);
+        assert_eq!(closure_drops.get(), 1);
+    }
+
+    #[test]
+    fn test_dropped_once_when_not_run() {
+        let value_drops = Cell::new(0);
+        let value = guard((), |()| value_drops.set(1+value_drops.get()));
+        let captured_drops = Cell::new(0);
+        let captured = guard((), |()| captured_drops.set(1+captured_drops.get()));
+        let closure_drops = Cell::new(0);
+        let guard = guard_on_unwind(value, |value| {
+            drop(value);
+            drop(captured);
+            closure_drops.set(1+closure_drops.get())
+        });
+        assert_eq!(value_drops.get(), 0);
+        assert_eq!(captured_drops.get(), 0);
+        assert_eq!(closure_drops.get(), 0);
+        drop(guard);
+        assert_eq!(value_drops.get(), 1);
+        assert_eq!(captured_drops.get(), 1);
+        assert_eq!(closure_drops.get(), 0);
     }
 }
