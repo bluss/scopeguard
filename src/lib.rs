@@ -147,7 +147,7 @@
 //! # Crate features:
 //!
 //! - `use_std`
-//!   + Enabled by default. Enables the `OnUnwind` strategy.
+//!   + Enabled by default. Enables the `OnUnwind` and `OnSuccess` strategies.
 //!   + Disable to use `no_std`.
 
 #[cfg(not(any(test, feature = "use_std")))]
@@ -159,6 +159,7 @@ use std::mem::{self, ManuallyDrop};
 use std::ops::{Deref, DerefMut};
 use std::ptr;
 
+/// Controls in which cases the associated code should be run
 pub trait Strategy {
     /// Return `true` if the guard’s associated code should run
     /// (in the context where this method is called).
@@ -185,8 +186,7 @@ pub enum OnUnwind {}
 /// Requires crate feature `use_std`.
 #[cfg(feature = "use_std")]
 #[derive(Debug)]
-#[cfg(test)]
-enum OnSuccess {}
+pub enum OnSuccess {}
 
 impl Strategy for Always {
     #[inline(always)]
@@ -200,7 +200,6 @@ impl Strategy for OnUnwind {
 }
 
 #[cfg(feature = "use_std")]
-#[cfg(test)]
 impl Strategy for OnSuccess {
     #[inline(always)]
     fn should_run() -> bool { !std::thread::panicking() }
@@ -225,7 +224,8 @@ macro_rules! defer {
 /// be a whole block.
 ///
 /// Requires crate feature `use_std`.
-#[cfg(test)]
+#[cfg(feature = "use_std")]
+#[macro_export]
 macro_rules! defer_on_success {
     ($e:expr) => {
         let _guard = $crate::guard_on_success((), |()| $e);
@@ -239,6 +239,7 @@ macro_rules! defer_on_success {
 /// be a whole block.
 ///
 /// Requires crate feature `use_std`.
+#[cfg(feature = "use_std")]
 #[macro_export]
 macro_rules! defer_on_unwind {
     ($e:expr) => {
@@ -303,9 +304,8 @@ pub fn guard<T, F: FnOnce(T)>(v: T, dropfn: F) -> ScopeGuard<T, F, Always> {
 ///
 /// Requires crate feature `use_std`.
 #[cfg(feature = "use_std")]
-#[cfg(test)]
 #[inline]
-fn guard_on_success<T, F: FnOnce(T)>(v: T, dropfn: F)
+pub fn guard_on_success<T, F: FnOnce(T)>(v: T, dropfn: F)
 -> ScopeGuard<T, F, OnSuccess> {
     ScopeGuard::with_strategy(v, dropfn)
 }
