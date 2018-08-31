@@ -155,7 +155,7 @@ extern crate core as std;
 
 use std::fmt;
 use std::marker::PhantomData;
-use std::mem::ManuallyDrop;
+use std::mem::{self, ManuallyDrop};
 use std::ops::{Deref, DerefMut};
 use std::ptr;
 
@@ -275,6 +275,19 @@ impl<T, F: FnOnce(T), S: Strategy> ScopeGuard<T, F, S> {
             value: ManuallyDrop::new(v),
             dropfn: ManuallyDrop::new(dropfn),
             strategy: PhantomData,
+        }
+    }
+
+    // Extract the value and closure. (without calling it)
+    #[inline]
+    pub fn into_inner(self) -> (T,F) {
+        // Cannot pattern match out of Drop-implementing types, so
+        // ptr::read the types to return and forget the source.
+        unsafe {
+            let value = ptr::read(&*self.value);
+            let dropfn = ptr::read(&*self.dropfn);
+            mem::forget(self);
+            (value, dropfn)
         }
     }
 }
@@ -428,5 +441,14 @@ mod tests {
         assert_eq!(value_drops.get(), 1);
         assert_eq!(captured_drops.get(), 1);
         assert_eq!(closure_drops.get(), 0);
+    }
+
+    #[test]
+    fn test_into_inner() {
+        let dropped = Cell::new(false);
+        let value = guard((), |_| dropped.set(true));
+        let guard = guard(value, |_| dropped.set(true));
+        let (_value, _closure) = guard.into_inner();
+        assert_eq!(dropped.get(), false);
     }
 }
