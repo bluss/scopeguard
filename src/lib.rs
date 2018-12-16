@@ -374,6 +374,7 @@ mod tests {
         assert_eq!(drops.get(), 0);
     }
 
+    #[cfg(feature = "use_std")]
     #[test]
     fn test_defer_success_1() {
         let drops = Cell::new(0);
@@ -384,6 +385,7 @@ mod tests {
         assert_eq!(drops.get(), 1);
     }
 
+    #[cfg(feature = "use_std")]
     #[test]
     fn test_defer_success_2() {
         let drops = Cell::new(0);
@@ -394,6 +396,7 @@ mod tests {
         assert_eq!(drops.get(), 0);
     }
 
+    #[cfg(feature = "use_std")]
     #[test]
     fn test_defer_unwind_1() {
         let drops = Cell::new(0);
@@ -405,6 +408,7 @@ mod tests {
         assert_eq!(drops.get(), 1);
     }
 
+    #[cfg(feature = "use_std")]
     #[test]
     fn test_defer_unwind_2() {
         let drops = Cell::new(0);
@@ -427,6 +431,7 @@ mod tests {
         assert_eq!(closure_drops.get(), 1);
     }
 
+    #[cfg(feature = "use_std")]
     #[test]
     fn test_dropped_once_when_not_run() {
         let value_drops = Cell::new(0);
