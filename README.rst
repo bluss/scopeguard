@@ -53,6 +53,15 @@ How to use
 Recent Changes
 --------------
 
+- 0.4.0 (Not released yet)
+
+  - The guard closure is now passed the inner value's (if applicable)
+    by value instead of a mutable reference. By @tormol.
+
+  - New strategy ``OnSuccess``, which triggers when scope is exited *without*
+    panic. It's the opposite to ``OnUnwind``. By @tormol.
+
+
 - 0.3.3
 
   - Use ``#[inline]`` on a few more functions by @stjepang (#14)
