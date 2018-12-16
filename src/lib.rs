@@ -52,8 +52,16 @@
 //! ```
 //! extern crate scopeguard;
 //! 
-//! use std::fs::File;
+//! use std::fs::*;
 //! use std::io::{self, Write};
+//! # // Mock file so that we don't actually write a file
+//! # struct MockFile;
+//! # impl MockFile {
+//! #     fn create(_s: &str) -> io::Result<Self> { Ok(MockFile) }
+//! #     fn write_all(&self, _b: &[u8]) -> io::Result<()> { Ok(()) }
+//! #     fn sync_all(&self) -> io::Result<()> { Ok(()) }
+//! # }
+//! # use self::MockFile as File;
 //! 
 //! fn try_main() -> io::Result<()> {
 //!     let f = File::create("newfile.txt")?;
