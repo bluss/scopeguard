@@ -5,6 +5,7 @@ version = "0.3.3"
 license = "MIT/Apache-2.0"
 repository = "https://github.com/bluss/scopeguard"
 documentation = "https://docs.rs/scopeguard/"
+readme = "README.rst"
 authors = ["bluss"]
 
 description = """
@@ -15,8 +16,8 @@ Defines the macros `defer!` and `defer_on_unwind!`; the latter only runs
 if the scope is exited through unwinding on panic.
 """
 
-keywords = ["scope-guard", "defer", "panic"]
-categories = ["rust-patterns"]
+keywords = ["scope-guard", "defer", "panic", "unwind"]
+categories = ["rust-patterns", "no-std"]
 
 [features]
 default = ["use_std"]
