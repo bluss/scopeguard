@@ -203,13 +203,13 @@ impl Strategy for Always {
 
 #[cfg(feature = "use_std")]
 impl Strategy for OnUnwind {
-    #[inline(always)]
+    #[inline]
     fn should_run() -> bool { std::thread::panicking() }
 }
 
 #[cfg(feature = "use_std")]
 impl Strategy for OnSuccess {
-    #[inline(always)]
+    #[inline]
     fn should_run() -> bool { !std::thread::panicking() }
 }
 
