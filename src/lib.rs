@@ -299,14 +299,34 @@ impl<T, F, S> ScopeGuard<T, F, S>
     }
 
     /// “Defuse” the guard and extract the value and closure (without calling it).
+    ///
+    /// ```
+    /// extern crate scopeguard;
+    /// use scopeguard::{guard, ScopeGuard};
+    ///
+    /// fn conditional() -> bool { true }
+    ///
+    /// fn main() {
+    ///     let mut guard = guard(Vec::new(), |mut v| v.clear());
+    ///     guard.push(1);
+    ///     
+    ///     if conditional() {
+    ///         // a condition maybe makes us decide to
+    ///         // “defuse” the guard and get back its inner parts
+    ///         let (value, dropfn) = ScopeGuard::into_inner(guard);
+    ///     } else {
+    ///         // guard still exists in this branch
+    ///     }
+    /// }
+    /// ```
     #[inline]
-    pub fn into_inner(self) -> (T, F) {
+    pub fn into_inner(guard: Self) -> (T, F) {
         // Cannot pattern match out of Drop-implementing types, so
         // ptr::read the types to return and forget the source.
         unsafe {
-            let value = ptr::read(&*self.value);
-            let dropfn = ptr::read(&*self.dropfn);
-            mem::forget(self);
+            let value = ptr::read(&*guard.value);
+            let dropfn = ptr::read(&*guard.dropfn);
+            mem::forget(guard);
             (value, dropfn)
         }
     }
@@ -497,7 +517,7 @@ mod tests {
         let dropped = Cell::new(false);
         let value = guard((), |_| dropped.set(true));
         let guard = guard(value, |_| dropped.set(true));
-        let (_value, _closure) = guard.into_inner();
+        let (_value, _closure) = ScopeGuard::into_inner(guard);
         assert_eq!(dropped.get(), false);
     }
 }
