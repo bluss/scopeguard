@@ -152,11 +152,15 @@
 //! ```
 //!
 //!
-//! # Crate features:
+//! # Crate Features
 //!
 //! - `use_std`
 //!   + Enabled by default. Enables the `OnUnwind` and `OnSuccess` strategies.
 //!   + Disable to use `no_std`.
+//!
+//! # Rust Version
+//!
+//! This version of the crate requires Rust 1.20 or later.
 
 #[cfg(not(any(test, feature = "use_std")))]
 extern crate core as std;
