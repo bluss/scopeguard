@@ -1,5 +1,4 @@
 #![cfg_attr(not(any(test, feature = "use_std")), no_std)]
-#![cfg_attr(feature="cargo-clippy", allow(inline_always))]
 
 //! A scope guard will run a given closure when it goes out of scope,
 //! even if the code between panics.
