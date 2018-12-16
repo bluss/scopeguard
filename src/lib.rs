@@ -265,6 +265,7 @@ pub struct ScopeGuard<T, F: FnOnce(T), S: Strategy = Always> {
     dropfn: ManuallyDrop<F>,
     strategy: PhantomData<S>,
 }
+
 impl<T, F: FnOnce(T), S: Strategy> ScopeGuard<T, F, S> {
     /// Create a `ScopeGuard` that owns `v` (accessible through deref) and calls
     /// `dropfn` when its destructor runs.
@@ -281,7 +282,7 @@ impl<T, F: FnOnce(T), S: Strategy> ScopeGuard<T, F, S> {
 
     // Extract the value and closure. (without calling it)
     #[inline]
-    pub fn into_inner(self) -> (T,F) {
+    pub fn into_inner(self) -> (T, F) {
         // Cannot pattern match out of Drop-implementing types, so
         // ptr::read the types to return and forget the source.
         unsafe {
@@ -342,7 +343,7 @@ impl<T, F: FnOnce(T), S: Strategy> Drop for ScopeGuard<T, F, S> {
     fn drop(&mut self) {
         // This is OK because the fields are `ManuallyDrop`s
         // which will not be dropped by the compiler.
-        let (value,dropfn) = unsafe {
+        let (value, dropfn) = unsafe {
             (ptr::read(&*self.value), ptr::read(&*self.dropfn))
         };
         if S::should_run() {
@@ -421,9 +422,9 @@ mod tests {
     #[test]
     fn test_only_dropped_by_closure_when_run() {
         let value_drops = Cell::new(0);
-        let value = guard((), |()| value_drops.set(1+value_drops.get()));
+        let value = guard((), |()| value_drops.set(1 + value_drops.get()));
         let closure_drops = Cell::new(0);
-        let guard = guard(value, |_| closure_drops.set(1+closure_drops.get()));
+        let guard = guard(value, |_| closure_drops.set(1 + closure_drops.get()));
         assert_eq!(value_drops.get(), 0);
         assert_eq!(closure_drops.get(), 0);
         drop(guard);
@@ -435,14 +436,14 @@ mod tests {
     #[test]
     fn test_dropped_once_when_not_run() {
         let value_drops = Cell::new(0);
-        let value = guard((), |()| value_drops.set(1+value_drops.get()));
+        let value = guard((), |()| value_drops.set(1 + value_drops.get()));
         let captured_drops = Cell::new(0);
-        let captured = guard((), |()| captured_drops.set(1+captured_drops.get()));
+        let captured = guard((), |()| captured_drops.set(1 + captured_drops.get()));
         let closure_drops = Cell::new(0);
         let guard = guard_on_unwind(value, |value| {
             drop(value);
             drop(captured);
-            closure_drops.set(1+closure_drops.get())
+            closure_drops.set(1 + closure_drops.get())
         });
         assert_eq!(value_drops.get(), 0);
         assert_eq!(captured_drops.get(), 0);
