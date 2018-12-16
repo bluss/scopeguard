@@ -274,7 +274,7 @@ pub struct ScopeGuard<T, F, S = Always>
 {
     value: ManuallyDrop<T>,
     dropfn: ManuallyDrop<F>,
-    strategy: PhantomData<S>,
+    strategy: PhantomData<fn(S) -> S>,
 }
 
 impl<T, F, S> ScopeGuard<T, F, S>
