@@ -52,8 +52,16 @@
 //! ```
 //! extern crate scopeguard;
 //! 
-//! use std::fs::File;
+//! use std::fs::*;
 //! use std::io::{self, Write};
+//! # // Mock file so that we don't actually write a file
+//! # struct MockFile;
+//! # impl MockFile {
+//! #     fn create(_s: &str) -> io::Result<Self> { Ok(MockFile) }
+//! #     fn write_all(&self, _b: &[u8]) -> io::Result<()> { Ok(()) }
+//! #     fn sync_all(&self) -> io::Result<()> { Ok(()) }
+//! # }
+//! # use self::MockFile as File;
 //! 
 //! fn try_main() -> io::Result<()> {
 //!     let f = File::create("newfile.txt")?;
@@ -144,11 +152,15 @@
 //! ```
 //!
 //!
-//! # Crate features:
+//! # Crate Features
 //!
 //! - `use_std`
 //!   + Enabled by default. Enables the `OnUnwind` and `OnSuccess` strategies.
 //!   + Disable to use `no_std`.
+//!
+//! # Rust Version
+//!
+//! This version of the crate requires Rust 1.20 or later.
 
 #[cfg(not(any(test, feature = "use_std")))]
 extern crate core as std;
@@ -195,13 +207,13 @@ impl Strategy for Always {
 
 #[cfg(feature = "use_std")]
 impl Strategy for OnUnwind {
-    #[inline(always)]
+    #[inline]
     fn should_run() -> bool { std::thread::panicking() }
 }
 
 #[cfg(feature = "use_std")]
 impl Strategy for OnSuccess {
-    #[inline(always)]
+    #[inline]
     fn should_run() -> bool { !std::thread::panicking() }
 }
 
@@ -260,12 +272,19 @@ macro_rules! defer_on_unwind {
 /// The guard's closure will be called with the held value in the destructor.
 ///
 /// The `ScopeGuard` implements `Deref` so that you can access the inner value.
-pub struct ScopeGuard<T, F: FnOnce(T), S: Strategy = Always> {
+pub struct ScopeGuard<T, F, S = Always>
+    where F: FnOnce(T),
+          S: Strategy,
+{
     value: ManuallyDrop<T>,
     dropfn: ManuallyDrop<F>,
-    strategy: PhantomData<S>,
+    strategy: PhantomData<fn(S) -> S>,
 }
-impl<T, F: FnOnce(T), S: Strategy> ScopeGuard<T, F, S> {
+
+impl<T, F, S> ScopeGuard<T, F, S>
+    where F: FnOnce(T),
+          S: Strategy,
+{
     /// Create a `ScopeGuard` that owns `v` (accessible through deref) and calls
     /// `dropfn` when its destructor runs.
     ///
@@ -279,15 +298,35 @@ impl<T, F: FnOnce(T), S: Strategy> ScopeGuard<T, F, S> {
         }
     }
 
-    // Extract the value and closure. (without calling it)
+    /// “Defuse” the guard and extract the value and closure (without calling it).
+    ///
+    /// ```
+    /// extern crate scopeguard;
+    /// use scopeguard::{guard, ScopeGuard};
+    ///
+    /// fn conditional() -> bool { true }
+    ///
+    /// fn main() {
+    ///     let mut guard = guard(Vec::new(), |mut v| v.clear());
+    ///     guard.push(1);
+    ///     
+    ///     if conditional() {
+    ///         // a condition maybe makes us decide to
+    ///         // “defuse” the guard and get back its inner parts
+    ///         let (value, dropfn) = ScopeGuard::into_inner(guard);
+    ///     } else {
+    ///         // guard still exists in this branch
+    ///     }
+    /// }
+    /// ```
     #[inline]
-    pub fn into_inner(self) -> (T,F) {
+    pub fn into_inner(guard: Self) -> (T, F) {
         // Cannot pattern match out of Drop-implementing types, so
         // ptr::read the types to return and forget the source.
         unsafe {
-            let value = ptr::read(&*self.value);
-            let dropfn = ptr::read(&*self.dropfn);
-            mem::forget(self);
+            let value = ptr::read(&*guard.value);
+            let dropfn = ptr::read(&*guard.dropfn);
+            mem::forget(guard);
             (value, dropfn)
         }
     }
@@ -296,7 +335,9 @@ impl<T, F: FnOnce(T), S: Strategy> ScopeGuard<T, F, S> {
 
 /// Create a new `ScopeGuard` owning `v` and with deferred closure `dropfn`.
 #[inline]
-pub fn guard<T, F: FnOnce(T)>(v: T, dropfn: F) -> ScopeGuard<T, F, Always> {
+pub fn guard<T, F>(v: T, dropfn: F) -> ScopeGuard<T, F, Always>
+    where F: FnOnce(T)
+{
     ScopeGuard::with_strategy(v, dropfn)
 }
 
@@ -305,8 +346,9 @@ pub fn guard<T, F: FnOnce(T)>(v: T, dropfn: F) -> ScopeGuard<T, F, Always> {
 /// Requires crate feature `use_std`.
 #[cfg(feature = "use_std")]
 #[inline]
-pub fn guard_on_success<T, F: FnOnce(T)>(v: T, dropfn: F)
--> ScopeGuard<T, F, OnSuccess> {
+pub fn guard_on_success<T, F>(v: T, dropfn: F) -> ScopeGuard<T, F, OnSuccess>
+    where F: FnOnce(T)
+{
     ScopeGuard::with_strategy(v, dropfn)
 }
 
@@ -315,34 +357,48 @@ pub fn guard_on_success<T, F: FnOnce(T)>(v: T, dropfn: F)
 /// Requires crate feature `use_std`.
 #[cfg(feature = "use_std")]
 #[inline]
-pub fn guard_on_unwind<T, F: FnOnce(T)>(v: T, dropfn: F)
--> ScopeGuard<T, F, OnUnwind> {
+pub fn guard_on_unwind<T, F>(v: T, dropfn: F) -> ScopeGuard<T, F, OnUnwind>
+    where F: FnOnce(T)
+{
     ScopeGuard::with_strategy(v, dropfn)
 }
 
 // ScopeGuard can be Sync even if F isn't because the closure is
 // not accessible from references.
 // The guard does not store any instance of S, so it is also irellevant.
-unsafe impl<T: Sync, F: FnOnce(T), S: Strategy> Sync for ScopeGuard<T, F, S> {}
+unsafe impl<T, F, S> Sync for ScopeGuard<T, F, S>
+    where T: Sync,
+          F: FnOnce(T),
+          S: Strategy
+{ }
 
-impl<T, F: FnOnce(T), S: Strategy> Deref for ScopeGuard<T, F, S> {
+impl<T, F, S> Deref for ScopeGuard<T, F, S>
+    where F: FnOnce(T),
+          S: Strategy
+{
     type Target = T;
     fn deref(&self) -> &T {
         &*self.value
     }
 }
 
-impl<T, F: FnOnce(T), S: Strategy> DerefMut for ScopeGuard<T, F, S> {
+impl<T, F, S> DerefMut for ScopeGuard<T, F, S>
+    where F: FnOnce(T),
+          S: Strategy
+{
     fn deref_mut(&mut self) -> &mut T {
         &mut*self.value
     }
 }
 
-impl<T, F: FnOnce(T), S: Strategy> Drop for ScopeGuard<T, F, S> {
+impl<T, F, S> Drop for ScopeGuard<T, F, S>
+    where F: FnOnce(T),
+          S: Strategy
+{
     fn drop(&mut self) {
         // This is OK because the fields are `ManuallyDrop`s
         // which will not be dropped by the compiler.
-        let (value,dropfn) = unsafe {
+        let (value, dropfn) = unsafe {
             (ptr::read(&*self.value), ptr::read(&*self.dropfn))
         };
         if S::should_run() {
@@ -351,10 +407,13 @@ impl<T, F: FnOnce(T), S: Strategy> Drop for ScopeGuard<T, F, S> {
     }
 }
 
-impl<T: fmt::Debug, F: FnOnce(T), S: Strategy>
-fmt::Debug for ScopeGuard<T, F, S> {
+impl<T, F, S> fmt::Debug for ScopeGuard<T, F, S>
+    where T: fmt::Debug,
+          F: FnOnce(T),
+          S: Strategy
+{
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.debug_struct("ScopeGuard")
+        f.debug_struct(stringify!(ScopeGuard))
          .field("value", &*self.value)
          .finish()
     }
@@ -374,6 +433,7 @@ mod tests {
         assert_eq!(drops.get(), 0);
     }
 
+    #[cfg(feature = "use_std")]
     #[test]
     fn test_defer_success_1() {
         let drops = Cell::new(0);
@@ -384,6 +444,7 @@ mod tests {
         assert_eq!(drops.get(), 1);
     }
 
+    #[cfg(feature = "use_std")]
     #[test]
     fn test_defer_success_2() {
         let drops = Cell::new(0);
@@ -394,6 +455,7 @@ mod tests {
         assert_eq!(drops.get(), 0);
     }
 
+    #[cfg(feature = "use_std")]
     #[test]
     fn test_defer_unwind_1() {
         let drops = Cell::new(0);
@@ -405,6 +467,7 @@ mod tests {
         assert_eq!(drops.get(), 1);
     }
 
+    #[cfg(feature = "use_std")]
     #[test]
     fn test_defer_unwind_2() {
         let drops = Cell::new(0);
@@ -417,9 +480,9 @@ mod tests {
     #[test]
     fn test_only_dropped_by_closure_when_run() {
         let value_drops = Cell::new(0);
-        let value = guard((), |()| value_drops.set(1+value_drops.get()));
+        let value = guard((), |()| value_drops.set(1 + value_drops.get()));
         let closure_drops = Cell::new(0);
-        let guard = guard(value, |_| closure_drops.set(1+closure_drops.get()));
+        let guard = guard(value, |_| closure_drops.set(1 + closure_drops.get()));
         assert_eq!(value_drops.get(), 0);
         assert_eq!(closure_drops.get(), 0);
         drop(guard);
@@ -427,17 +490,18 @@ mod tests {
         assert_eq!(closure_drops.get(), 1);
     }
 
+    #[cfg(feature = "use_std")]
     #[test]
     fn test_dropped_once_when_not_run() {
         let value_drops = Cell::new(0);
-        let value = guard((), |()| value_drops.set(1+value_drops.get()));
+        let value = guard((), |()| value_drops.set(1 + value_drops.get()));
         let captured_drops = Cell::new(0);
-        let captured = guard((), |()| captured_drops.set(1+captured_drops.get()));
+        let captured = guard((), |()| captured_drops.set(1 + captured_drops.get()));
         let closure_drops = Cell::new(0);
         let guard = guard_on_unwind(value, |value| {
             drop(value);
             drop(captured);
-            closure_drops.set(1+closure_drops.get())
+            closure_drops.set(1 + closure_drops.get())
         });
         assert_eq!(value_drops.get(), 0);
         assert_eq!(captured_drops.get(), 0);
@@ -453,7 +517,7 @@ mod tests {
         let dropped = Cell::new(false);
         let value = guard((), |_| dropped.set(true));
         let guard = guard(value, |_| dropped.set(true));
-        let (_value, _closure) = guard.into_inner();
+        let (_value, _closure) = ScopeGuard::into_inner(guard);
         assert_eq!(dropped.get(), false);
     }
 }
