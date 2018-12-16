@@ -413,7 +413,7 @@ impl<T, F, S> fmt::Debug for ScopeGuard<T, F, S>
           S: Strategy
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.debug_struct("ScopeGuard")
+        f.debug_struct(stringify!(ScopeGuard))
          .field("value", &*self.value)
          .finish()
     }
