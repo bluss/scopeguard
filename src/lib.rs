@@ -288,7 +288,7 @@ impl<T, F: FnOnce(T), S: Strategy> ScopeGuard<T, F, S> {
         }
     }
 
-    // Extract the value and closure. (without calling it)
+    /// “Defuse” the guard and extract the value and closure (without calling it).
     #[inline]
     pub fn into_inner(self) -> (T, F) {
         // Cannot pattern match out of Drop-implementing types, so
