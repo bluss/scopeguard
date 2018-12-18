@@ -380,6 +380,30 @@ pub fn guard_on_success<T, F>(v: T, dropfn: F) -> ScopeGuard<T, F, OnSuccess>
 /// Create a new `ScopeGuard` owning `v` and with deferred closure `dropfn`.
 ///
 /// Requires crate feature `use_std`.
+///
+/// ## Examples
+///
+/// For performance reasons, or to emulate “only run guard on unwind” in
+/// no-std environments, we can also use the default guard and simply manually
+/// defuse it at the end of scope like the following example. (The performance
+/// reason would be if the [`OnUnwind`]'s call to [std::thread::panicking()] is
+/// an issue.)
+///
+/// ```
+/// extern crate scopeguard;
+/// 
+/// use scopeguard::ScopeGuard;
+/// # fn main() {
+/// {
+///     let guard = scopeguard::guard((), |_| { });
+///
+///     // rest of the code here
+///     
+///     // we reached the end of scope without unwinding - defuse it
+///     ScopeGuard::into_inner(guard);
+/// }
+/// # }
+/// ```
 #[cfg(feature = "use_std")]
 #[inline]
 pub fn guard_on_unwind<T, F>(v: T, dropfn: F) -> ScopeGuard<T, F, OnUnwind>
