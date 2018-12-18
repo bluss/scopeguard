@@ -6,6 +6,28 @@
 //!
 //! # Examples
 //!
+//! ## Hello World
+//!
+//! This example creates a scope guard with an example function:
+//!
+//! ```
+//! extern crate scopeguard;
+//!
+//! fn f() {
+//!     let _guard = scopeguard::guard((), |_| {
+//!         println!("Hello Scope Exit!");
+//!     });
+//!
+//!     // rest of the code here.
+//!
+//!     // Here, at the end of `_guard`'s scope, the guard's closure is called.
+//!     // It is also called if we exit this scope through unwinding instead.
+//! }
+//! # fn main() {
+//! #    f();
+//! # }
+//! ```
+//!
 //! ## `defer!`
 //!
 //! Use the `defer` macro to run an operation at scope exit,
