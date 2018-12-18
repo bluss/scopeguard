@@ -6,6 +6,28 @@
 //!
 //! # Examples
 //!
+//! ## Hello World
+//!
+//! This example creates a scope guard with an example function:
+//!
+//! ```
+//! extern crate scopeguard;
+//!
+//! fn f() {
+//!     let _guard = scopeguard::guard((), |_| {
+//!         println!("Hello Scope Exit!");
+//!     });
+//!
+//!     // rest of the code here.
+//!
+//!     // Here, at the end of `_guard`'s scope, the guard's closure is called.
+//!     // It is also called if we exit this scope through unwinding instead.
+//! }
+//! # fn main() {
+//! #    f();
+//! # }
+//! ```
+//!
 //! ## `defer!`
 //!
 //! Use the `defer` macro to run an operation at scope exit,
@@ -358,6 +380,30 @@ pub fn guard_on_success<T, F>(v: T, dropfn: F) -> ScopeGuard<T, F, OnSuccess>
 /// Create a new `ScopeGuard` owning `v` and with deferred closure `dropfn`.
 ///
 /// Requires crate feature `use_std`.
+///
+/// ## Examples
+///
+/// For performance reasons, or to emulate “only run guard on unwind” in
+/// no-std environments, we can also use the default guard and simply manually
+/// defuse it at the end of scope like the following example. (The performance
+/// reason would be if the [`OnUnwind`]'s call to [std::thread::panicking()] is
+/// an issue.)
+///
+/// ```
+/// extern crate scopeguard;
+/// 
+/// use scopeguard::ScopeGuard;
+/// # fn main() {
+/// {
+///     let guard = scopeguard::guard((), |_| { });
+///
+///     // rest of the code here
+///     
+///     // we reached the end of scope without unwinding - defuse it
+///     ScopeGuard::into_inner(guard);
+/// }
+/// # }
+/// ```
 #[cfg(feature = "use_std")]
 #[inline]
 pub fn guard_on_unwind<T, F>(v: T, dropfn: F) -> ScopeGuard<T, F, OnUnwind>

@@ -55,11 +55,20 @@ Recent Changes
 
 - 0.4.0 (Not released yet)
 
-  - The guard closure is now passed the inner value's (if applicable)
-    by value instead of a mutable reference. By @tormol.
+  - Change the closure type from ``FnMut(&mut T)`` to ``FnOnce(T)``:
+    Passing the inner value by value instead of a mutable reference is a
+    breaking change, but allows the guard closure to consume it. (by @tormol)
 
-  - New strategy ``OnSuccess``, which triggers when scope is exited *without*
-    panic. It's the opposite to ``OnUnwind``. By @tormol.
+  - Add ``defer_on_success!{}``, ``guard_on_success()`` and ``OnSuccess``
+    strategy, which triggers when scope is exited *without* panic. It's the
+    opposite to ``OnUnwind`` / ``guard_on_unwind()`` / ``defer_on_unwind!{}``.
+
+  - Add ``ScopeGuard::into_inner()``, which "defuses" the guard and returns the
+    guarded value. (by @tormol)
+
+  - Implement ``Sync`` for guards with non-``Sync`` closures.
+
+  - Require Rust 1.20
 
 
 - 0.3.3
