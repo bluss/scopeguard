@@ -297,7 +297,7 @@ impl<T, F, S> ScopeGuard<T, F, S>
         }
     }
 
-    /// “Defuse” the guard and extract the value and closure (without calling it).
+    /// “Defuse” the guard and extract the value without calling the closure.
     ///
     /// ```
     /// extern crate scopeguard;
@@ -312,21 +312,25 @@ impl<T, F, S> ScopeGuard<T, F, S>
     ///     if conditional() {
     ///         // a condition maybe makes us decide to
     ///         // “defuse” the guard and get back its inner parts
-    ///         let (value, dropfn) = ScopeGuard::into_inner(guard);
+    ///         let value = ScopeGuard::into_inner(guard);
     ///     } else {
     ///         // guard still exists in this branch
     ///     }
     /// }
     /// ```
     #[inline]
-    pub fn into_inner(guard: Self) -> (T, F) {
+    pub fn into_inner(guard: Self) -> T {
         // Cannot pattern match out of Drop-implementing types, so
-        // ptr::read the types to return and forget the source.
+        // ptr::read the value and forget the guard.
         unsafe {
             let value = ptr::read(&*guard.value);
-            let dropfn = ptr::read(&*guard.dropfn);
+            // read the closure so that it is dropped, and assign it to a local
+            // variable to ensure that it is only dropped after the guard has
+            // been forgotten. (In case the Drop impl of the closure, or that
+            // of any consumed captured variable, panics).
+            let _dropfn = ptr::read(&*guard.dropfn);
             mem::forget(guard);
-            (value, dropfn)
+            value
         }
     }
 }
@@ -514,9 +518,10 @@ mod tests {
     #[test]
     fn test_into_inner() {
         let dropped = Cell::new(false);
-        let value = guard((), |_| dropped.set(true));
+        let value = guard(42, |_| dropped.set(true));
         let guard = guard(value, |_| dropped.set(true));
-        let (_value, _closure) = ScopeGuard::into_inner(guard);
+        let inner = ScopeGuard::into_inner(guard);
         assert_eq!(dropped.get(), false);
+        assert_eq!(*inner, 42);
     }
 }
