@@ -53,7 +53,7 @@ How to use
 Recent Changes
 --------------
 
-- 0.4.0 (Not released yet)
+- 1.0.0
 
   - Change the closure type from ``FnMut(&mut T)`` to ``FnOnce(T)``:
     Passing the inner value by value instead of a mutable reference is a
@@ -69,7 +69,6 @@ Recent Changes
   - Implement ``Sync`` for guards with non-``Sync`` closures.
 
   - Require Rust 1.20
-
 
 - 0.3.3
 
