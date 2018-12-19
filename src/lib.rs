@@ -182,6 +182,10 @@
 //! # Rust Version
 //!
 //! This version of the crate requires Rust 1.20 or later.
+//!
+//! The scopeguard 1.x release series will use a carefully considered version
+//! upgrade policy, where in a later 1.x version, we will raise the minimum
+//! required Rust version.
 
 #[cfg(not(any(test, feature = "use_std")))]
 extern crate core as std;
