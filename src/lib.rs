@@ -419,7 +419,7 @@ pub fn guard_on_unwind<T, F>(v: T, dropfn: F) -> ScopeGuard<T, F, OnUnwind>
 
 // ScopeGuard can be Sync even if F isn't because the closure is
 // not accessible from references.
-// The guard does not store any instance of S, so it is also irellevant.
+// The guard does not store any instance of S, so it is also irrelevant.
 unsafe impl<T, F, S> Sync for ScopeGuard<T, F, S>
     where T: Sync,
           F: FnOnce(T),
