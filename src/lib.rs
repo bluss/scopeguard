@@ -44,9 +44,9 @@
 //!     let drop_counter = Cell::new(0);
 //!     {
 //!         // Create a scope guard using `defer!` for the current scope
-//!         defer! {{
+//!         defer! {
 //!             drop_counter.set(1 + drop_counter.get());
-//!         }};
+//!         }
 //!
 //!         // Do regular operations here in the meantime.
 //!
@@ -245,21 +245,22 @@ impl Strategy for OnSuccess {
 
 /// Macro to create a `ScopeGuard` (always run).
 ///
-/// The macro takes one expression `$e`, which is the body of a closure
-/// that will run when the scope is exited. The expression can
-/// be a whole block.
+/// The macro takes statements, which are the body of a closure
+/// that will run when the scope is exited.
 #[macro_export]
 macro_rules! defer {
-    ($e:expr) => {
-        let _guard = $crate::guard((), |()| $e);
-    }
+    (@block $b:expr) => {
+        let _guard = $crate::guard((), |()| $b);
+    };
+    ($($t:tt)*) => {
+        defer!(@block { $($t)* })
+    };
 }
 
 /// Macro to create a `ScopeGuard` (run on successful scope exit).
 ///
-/// The macro takes one expression `$e`, which is the body of a closure
-/// that will run when the scope is exited. The expression can
-/// be a whole block.
+/// The macro takes statements, which are the body of a closure
+/// that will run when the scope is exited.
 ///
 /// Requires crate feature `use_std`.
 #[cfg(feature = "use_std")]
@@ -267,14 +268,16 @@ macro_rules! defer {
 macro_rules! defer_on_success {
     ($e:expr) => {
         let _guard = $crate::guard_on_success((), |()| $e);
-    }
+    };
+    ($($t:tt)*) => {
+        defer_on_success!(@block { $($t)* })
+    };
 }
 
 /// Macro to create a `ScopeGuard` (run on unwinding from panic).
 ///
-/// The macro takes one expression `$e`, which is the body of a closure
-/// that will run when the scope is exited. The expression can
-/// be a whole block.
+/// The macro takes statements, which are the body of a closure
+/// that will run when the scope is exited.
 ///
 /// Requires crate feature `use_std`.
 #[cfg(feature = "use_std")]
@@ -282,7 +285,10 @@ macro_rules! defer_on_success {
 macro_rules! defer_on_unwind {
     ($e:expr) => {
         let _guard = $crate::guard_on_unwind((), |()| $e);
-    }
+    };
+    ($($t:tt)*) => {
+        defer_on_unwind!(@block { $($t)* })
+    };
 }
 
 /// `ScopeGuard` is a scope guard that may own a protected value.
