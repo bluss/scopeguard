@@ -243,20 +243,6 @@ impl Strategy for OnSuccess {
     fn should_run() -> bool { !std::thread::panicking() }
 }
 
-#[macro_export]
-#[doc(hidden)]
-macro_rules! __defer_internal {
-    (@defer $b:block) => {
-        let _guard = $crate::guard((), |()| $b);
-    };
-    (@defer_on_success $b:block) => {
-        let _guard = $crate::guard_on_success((), |()| $b);
-    };
-    (@defer_on_unwind $b:block) => {
-        let _guard = $crate::guard_on_unwind((), |()| $b);
-    };
-}
-
 /// Macro to create a `ScopeGuard` (always run).
 ///
 /// The macro takes statements, which are the body of a closure
@@ -264,7 +250,7 @@ macro_rules! __defer_internal {
 #[macro_export(local_inner_macros)]
 macro_rules! defer {
     ($($t:tt)*) => {
-        __defer_internal!(@defer { $($t)* })
+        let _guard = $crate::guard((), |()| { $($t)* });
     };
 }
 
@@ -278,7 +264,7 @@ macro_rules! defer {
 #[macro_export(local_inner_macros)]
 macro_rules! defer_on_success {
     ($($t:tt)*) => {
-        __defer_internal!(@defer_on_success { $($t)* })
+        let _guard = $crate::guard_on_success((), |()| { $($t)* });
     };
 }
 
@@ -292,7 +278,7 @@ macro_rules! defer_on_success {
 #[macro_export(local_inner_macros)]
 macro_rules! defer_on_unwind {
     ($($t:tt)*) => {
-        __defer_internal!(@defer_on_unwind { $($t)* })
+        let _guard = $crate::guard_on_unwind((), |()| { $($t)* });
     };
 }
 
