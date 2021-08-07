@@ -193,9 +193,8 @@ extern crate core as std;
 
 use std::fmt;
 use std::marker::PhantomData;
-use std::mem::{self, ManuallyDrop};
+use std::mem::{self, MaybeUninit};
 use std::ops::{Deref, DerefMut};
-use std::ptr;
 
 /// Controls in which cases the associated code should be run
 pub trait Strategy {
@@ -282,6 +281,17 @@ macro_rules! defer_on_unwind {
     };
 }
 
+/// Return the contents of `value` and replace it with uninitialized memory.
+/// Replacing `value` with uninitialized memory can be optimized to a no-op by
+/// the compiler, but avoids UB if `T` contains a mutable reference. 
+///
+/// # Safety
+///
+/// Before calling `take_init`, `value` must be initialized.
+unsafe fn take_init<T>(value: &mut MaybeUninit<T>) -> T {
+    mem::replace(value, MaybeUninit::uninit()).assume_init()
+}
+
 /// `ScopeGuard` is a scope guard that may own a protected value.
 ///
 /// If you place a guard in a local variable, the closure can
@@ -299,8 +309,8 @@ pub struct ScopeGuard<T, F, S = Always>
     where F: FnOnce(T),
           S: Strategy,
 {
-    value: ManuallyDrop<T>,
-    dropfn: ManuallyDrop<F>,
+    value: MaybeUninit<T>,
+    dropfn: MaybeUninit<F>,
     // fn(S) -> S is used, so that the S is not taken into account for auto traits.
     strategy: PhantomData<fn(S) -> S>,
 }
@@ -316,8 +326,8 @@ impl<T, F, S> ScopeGuard<T, F, S>
     #[inline]
     pub fn with_strategy(v: T, dropfn: F) -> ScopeGuard<T, F, S> {
         ScopeGuard {
-            value: ManuallyDrop::new(v),
-            dropfn: ManuallyDrop::new(dropfn),
+            value: MaybeUninit::new(v),
+            dropfn: MaybeUninit::new(dropfn),
             strategy: PhantomData,
         }
     }
@@ -345,16 +355,16 @@ impl<T, F, S> ScopeGuard<T, F, S>
     /// }
     /// ```
     #[inline]
-    pub fn into_inner(guard: Self) -> T {
-        // Cannot move out of Drop-implementing types, so
-        // ptr::read the value and forget the guard.
+    pub fn into_inner(mut guard: Self) -> T {
+        // Cannot move out of Drop-implementing types, so use `take_init` to get
+        // a copy of the value and forget the guard.
         unsafe {
-            let value = ptr::read(&*guard.value);
+            let value = take_init(&mut guard.value);
             // read the closure so that it is dropped, and assign it to a local
             // variable to ensure that it is only dropped after the guard has
             // been forgotten. (In case the Drop impl of the closure, or that
             // of any consumed captured variable, panics).
-            let _dropfn = ptr::read(&*guard.dropfn);
+            let _dropfn = take_init(&mut guard.dropfn);
             mem::forget(guard);
             value
         }
@@ -432,7 +442,7 @@ impl<T, F, S> Deref for ScopeGuard<T, F, S>
     type Target = T;
 
     fn deref(&self) -> &T {
-        &*self.value
+        unsafe { &*self.value.as_ptr() }
     }
 }
 
@@ -441,7 +451,7 @@ impl<T, F, S> DerefMut for ScopeGuard<T, F, S>
           S: Strategy
 {
     fn deref_mut(&mut self) -> &mut T {
-        &mut *self.value
+        unsafe { &mut *self.value.as_mut_ptr() }
     }
 }
 
@@ -450,10 +460,10 @@ impl<T, F, S> Drop for ScopeGuard<T, F, S>
           S: Strategy
 {
     fn drop(&mut self) {
-        // This is OK because the fields are `ManuallyDrop`s
+        // This is OK because the fields are `MaybeUninit`s
         // which will not be dropped by the compiler.
         let (value, dropfn) = unsafe {
-            (ptr::read(&*self.value), ptr::read(&*self.dropfn))
+            (take_init(&mut self.value), take_init(&mut self.dropfn))
         };
         if S::should_run() {
             dropfn(value);
@@ -468,7 +478,7 @@ impl<T, F, S> fmt::Debug for ScopeGuard<T, F, S>
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct(stringify!(ScopeGuard))
-         .field("value", &*self.value)
+         .field("value", &**self)
          .finish()
     }
 }
