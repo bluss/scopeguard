@@ -193,7 +193,7 @@ extern crate core as std;
 
 use std::fmt;
 use std::marker::PhantomData;
-use std::mem::{self, ManuallyDrop};
+use std::mem::ManuallyDrop;
 use std::ops::{Deref, DerefMut};
 use std::ptr;
 
@@ -346,16 +346,15 @@ impl<T, F, S> ScopeGuard<T, F, S>
     /// ```
     #[inline]
     pub fn into_inner(guard: Self) -> T {
-        // Cannot move out of Drop-implementing types, so
-        // ptr::read the value and forget the guard.
+        // Cannot move out of Drop-implementing types, so ptr::read the value
+        // and forget the guard.
+        let guard = ManuallyDrop::new(guard);
         unsafe {
             let value = ptr::read(&*guard.value);
-            // read the closure so that it is dropped, and assign it to a local
-            // variable to ensure that it is only dropped after the guard has
-            // been forgotten. (In case the Drop impl of the closure, or that
-            // of any consumed captured variable, panics).
-            let _dropfn = ptr::read(&*guard.dropfn);
-            mem::forget(guard);
+            // Read the closure so that it gets dropped. Do this after value has
+            // also been read so that, if the closure's drop function panics,
+            // unwinding still tries to drop value.
+            ptr::read(&*guard.dropfn)
             value
         }
     }
