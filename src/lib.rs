@@ -348,13 +348,13 @@ impl<T, F, S> ScopeGuard<T, F, S>
     pub fn into_inner(guard: Self) -> T {
         // Cannot move out of `Drop`-implementing types,
         // so `ptr::read` the value and forget the guard.
-        let guard = ManuallyDrop::new(guard);
+        let mut guard = ManuallyDrop::new(guard);
         unsafe {
             let value = ptr::read(&*guard.value);
-            // Read the closure, so that it gets dropped. Do this after `value` has
-            // been read, so that if the closure's `drop` function panics,
-            // unwinding still tries to drop `value`.
-            ptr::read(&*guard.dropfn);
+            // Drop the closure after `value` has been read, so that if the
+            // closure's `drop` function panics, unwinding still tries to drop
+            // `value`.
+            ManuallyDrop::drop(&mut guard.dropfn);
             value
         }
     }
