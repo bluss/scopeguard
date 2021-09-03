@@ -20,7 +20,7 @@ __ https://docs.rs/scopeguard/
 .. |build_status| image:: https://travis-ci.org/bluss/scopeguard.svg
 .. _build_status: https://travis-ci.org/bluss/scopeguard
 
-.. |crates| image:: http://meritbadge.herokuapp.com/scopeguard
+.. |crates| image:: https://img.shields.io/crates/v/scopeguard.svg
 .. _crates: https://crates.io/crates/scopeguard
 
 How to use
