@@ -3,8 +3,10 @@
 Rust crate for a convenient RAII scope guard that will run a given closure when
 it goes out of scope, even if the code between panics (assuming unwinding panic).
 
-The `defer!` macro and `guard` are `no_std` compatible (require only core),
-but the on unwinding / not on uwinding strategies requires linking to `std`.
+The `defer!` macro and `guard` are `no_std` compatible (require only `core`),
+but the on unwinding / not on unwinding strategies require linking to `std`.
+By default, the `use_std` crate feature is enabled. Disable the default features
+for `no_std` support.
 
 Please read the [API documentation here](https://docs.rs/scopeguard/).
 
