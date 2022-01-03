@@ -18,7 +18,8 @@ Minimum supported Rust version: 1.20
 ## How to use
 
 ```rs
-#[macro_use(defer)] extern crate scopeguard;
+#[macro_use(defer)]
+extern crate scopeguard;
 
 use scopeguard::guard;
 
