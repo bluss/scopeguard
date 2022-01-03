@@ -334,7 +334,7 @@ impl<T, F, S> ScopeGuard<T, F, S>
     /// fn main() {
     ///     let mut guard = guard(Vec::new(), |mut v| v.clear());
     ///     guard.push(1);
-    ///     
+    ///
     ///     if conditional() {
     ///         // a condition maybe makes us decide to
     ///         // “defuse” the guard and get back its inner parts
