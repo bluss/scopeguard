@@ -12,7 +12,7 @@ Please read the [API documentation here](https://docs.rs/scopeguard/).
 
 Minimum supported Rust version: 1.20
 
-[![build_status](https://travis-ci.org/bluss/scopeguard.svg)](https://travis-ci.org/bluss/scopeguard)
+[![build_status](https://github.com/bluss/scopeguard/actions/workflows/ci.yaml/badge.svg)](https://github.com/bluss/scopeguard/actions/workflows/ci.yaml)
 [![crates](https://img.shields.io/crates/v/scopeguard.svg)](https://crates.io/crates/scopeguard)
 
 ## How to use
