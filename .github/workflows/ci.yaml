@@ -22,13 +22,19 @@ jobs:
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
+          profile: minimal
           toolchain: ${{ matrix.rust }}
           override: true
-      - name: Check formatting
-        run: cargo fmt -- --check
       - name: Build
         run: cargo build
       - name: Run tests
         run: cargo test
       - name: Run tests (no_std)
         run: cargo test --no-default-features
+
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Check formatting
+        run: cargo fmt -- --check
