@@ -153,7 +153,7 @@
 //!             if *hole_guard.value >= hole_guard.v[i] {
 //!                 // move the element back and the hole forward
 //!                 let index = hole_guard.index;
-//!                 ptr::copy_nonoverlapping(&hole_guard.v[index + 1], &mut hole_guard.v[index], 1);
+//!                 hole_guard.v.swap(index, index + 1);
 //!                 hole_guard.index += 1;
 //!             } else {
 //!                 break;
