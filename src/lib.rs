@@ -322,6 +322,7 @@ where
     ///
     /// The `Strategy` decides whether the scope guard's closure should run.
     #[inline]
+    #[must_use]
     pub fn with_strategy(v: T, dropfn: F) -> ScopeGuard<T, F, S> {
         ScopeGuard {
             value: ManuallyDrop::new(v),
