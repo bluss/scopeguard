@@ -322,6 +322,7 @@ where
     ///
     /// The `Strategy` decides whether the scope guard's closure should run.
     #[inline]
+    #[must_use]
     pub fn with_strategy(v: T, dropfn: F) -> ScopeGuard<T, F, S> {
         ScopeGuard {
             value: ManuallyDrop::new(v),
@@ -370,6 +371,7 @@ where
 
 /// Create a new `ScopeGuard` owning `v` and with deferred closure `dropfn`.
 #[inline]
+#[must_use]
 pub fn guard<T, F>(v: T, dropfn: F) -> ScopeGuard<T, F, Always>
 where
     F: FnOnce(T),
@@ -382,6 +384,7 @@ where
 /// Requires crate feature `use_std`.
 #[cfg(feature = "use_std")]
 #[inline]
+#[must_use]
 pub fn guard_on_success<T, F>(v: T, dropfn: F) -> ScopeGuard<T, F, OnSuccess>
 where
     F: FnOnce(T),
@@ -418,6 +421,7 @@ where
 /// ```
 #[cfg(feature = "use_std")]
 #[inline]
+#[must_use]
 pub fn guard_on_unwind<T, F>(v: T, dropfn: F) -> ScopeGuard<T, F, OnUnwind>
 where
     F: FnOnce(T),
