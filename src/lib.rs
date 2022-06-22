@@ -483,7 +483,7 @@ where
     F: FnOnce(T),
     S: Strategy,
 {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct(stringify!(ScopeGuard))
             .field("value", &*self.value)
             .finish()

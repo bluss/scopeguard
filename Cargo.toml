@@ -18,9 +18,15 @@ shorthands for guards with one of the implemented strategies.
 keywords = ["scope-guard", "defer", "panic", "unwind"]
 categories = ["rust-patterns", "no-std"]
 
+[dependencies]
+# Special dependencies used in rustc-dep-of-std mode.
+core = { version = "1.0.0", optional = true, package = "rustc-std-workspace-core" }
+compiler_builtins = { version = '0.1.49', optional = true }
+
 [features]
 default = ["use_std"]
 use_std = []
+rustc-dep-of-std = ["core", "compiler_builtins"]
 
 [package.metadata.release]
 no-dev-version = true
