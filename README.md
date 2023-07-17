@@ -46,6 +46,12 @@ fn g() {
 
 ## Recent Changes
 
+- 1.2.0
+
+  - Use ManuallyDrop instead of mem::forget in into_inner. (by @willtunnels)
+  - Warn if the guard is not assigned to a variable and is dropped immediately
+    instead of at the scope's end. (by @sergey-v-galtsev)
+
 - 1.1.0
 
   - Change macros (`defer!`, `defer_on_success!` and `defer_on_unwind!`)
